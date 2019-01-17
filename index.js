@@ -20,29 +20,27 @@ module.exports = (
         const match = /<GifPlayer gif="([^"]+)"[^\/]*\/>/.exec(node.value);
         if (match) {
             const url = match[1];
-            // console.log('found gif player with url', url);
+            // console.log('################ found gif player with url', url);
 
             const parentNode = getNode(markdownNode.parent);
 
             if (parentNode && parentNode.dir && isRelativeUrl(url)) {
                 const imagePath = slash(path.join(parentNode.dir, url));
-            
-                const file = _.find(files, f => {
-                    return f.absolutePath === imagePath;
-                });
 
-                if (file) {
-                    // console.log('found file node', file);
+                const relativeFilename = _.startsWith(url, '/') ? url.substr(1) : url;
 
-                    const newFilename = `${file.name}-${file.internal.contentDigest}.${file.extension}`;
+                const newFilename = `${parentNode.internal.contentDigest}/${relativeFilename}`;
 
-                    node.value = node.value.replace(url, `/${newFilename}`);
+                node.value = node.value.replace(url, `${pathPrefix}/${newFilename}`);
 
-                    filesToCopy.push({
-                        from: file.absolutePath,
-                        to: path.posix.join(process.cwd(), DEPLOY_DIR, newFilename)
-                    })
-                }
+                // console.log('################ updating found Gifplayer', node.value)
+
+                filesToCopy.push({
+                    from: imagePath,
+                    to: path.posix.join(process.cwd(), DEPLOY_DIR, newFilename)
+                })
+            } else {
+                console.log('invalid parent node, or not relative url')
             }
         }
     })
